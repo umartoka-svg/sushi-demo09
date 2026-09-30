@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Бот заказов для кафе</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+:root{
+  --paper:#F5F7F3; --surface:#FFFFFF; --ink:#16201C; --muted:#5B6860; --line:#DAE0DA;
+  --accent:#D9532B; --accent-ink:#FFFFFF; --accent-soft:#FBE6DE;
+  --ok:#4F7F35; --ok-soft:#E3EFD9;
+  --phone:#0F1714; --phone-head:#FFFFFF; --phone-head-ink:#16201C;
+  --chat:#D6E2CF; --in:#FFFFFF; --out:#DDF3C7; --meta:#7A887F;
+  --kb:rgba(34,58,44,.42); --kb-ink:#FFFFFF; --kb-hover:rgba(34,58,44,.58);
+  --toast:rgba(20,28,24,.88);
+  --display:"Unbounded","Golos Text",system-ui,sans-serif;
+  --body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#0F1512; --surface:#18211C; --ink:#E9EEEA; --muted:#9AA79F; --line:#2A352F;
+    --accent:#F07A55; --accent-ink:#1A0F0A; --accent-soft:#3A2119;
+    --ok:#8CC26A; --ok-soft:#1F3019;
+    --phone:#000000; --phone-head:#17211C; --phone-head-ink:#E9EEEA;
+    --chat:#0E1A14; --in:#1C2A23; --out:#2A4A31; --meta:#8C9A92;
+    --kb:rgba(120,150,130,.22); --kb-ink:#E9EEEA; --kb-hover:rgba(120,150,130,.34);
+    --toast:rgba(233,238,234,.92);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0F1512; --surface:#18211C; --ink:#E9EEEA; --muted:#9AA79F; --line:#2A352F;
+  --accent:#F07A55; --accent-ink:#1A0F0A; --accent-soft:#3A2119;
+  --ok:#8CC26A; --ok-soft:#1F3019;
+  --phone:#000000; --phone-head:#17211C; --phone-head-ink:#E9EEEA;
+  --chat:#0E1A14; --in:#1C2A23; --out:#2A4A31; --meta:#8C9A92;
+  --kb:rgba(120,150,130,.22); --kb-ink:#E9EEEA; --kb-hover:rgba(120,150,130,.34);
+  --toast:rgba(233,238,234,.92);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding-inline:16px}
+.wrap{max-width:1080px;margin:0 auto}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-block:20px;border-bottom:1px solid var(--line);font-size:14px;color:var(--muted)}
+.top b{color:var(--ink);font-weight:600}
+
+/* hero */
+.hero{padding-block:40px 24px;display:grid;gap:14px;max-width:760px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,5vw,46px);line-height:1.12;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(22px,3.2vw,30px);line-height:1.2;margin:0;text-wrap:balance}
+h3{font-size:18px;margin:0;font-weight:600}
+.lead{font-size:18px;color:var(--muted);margin:0;max-width:62ch}
+
+/* demo */
+.demo{padding-block:8px 48px}
+.demo-hint{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:16px}
+.demo-hint p{margin:0;color:var(--muted);font-size:15px;max-width:60ch}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:14px}
+.ghost:hover{border-color:var(--accent)}
+.tabs{display:none;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;border-radius:999px;padding:9px 10px;font-weight:500;font-size:15px;position:relative}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:600;margin-left:6px;padding:0 6px}
+.phones{display:grid;grid-template-columns:repeat(2,minmax(0,380px));justify-content:center;gap:40px}
+.phone-col{display:grid;gap:10px;min-width:0}
+.phone-label{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;justify-content:space-between}
+.phone{background:var(--phone);border-radius:34px;padding:10px;box-shadow:0 18px 50px -24px rgba(10,30,20,.45)}
+.screen{border-radius:26px;overflow:hidden;display:flex;flex-direction:column;height:640px;background:var(--chat);position:relative}
+.bar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--phone-head);color:var(--phone-head-ink);border-bottom:1px solid var(--line)}
+.ava{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:19px;flex:none}
+.ava.bot{background:var(--accent);color:var(--accent-ink)}
+.ava.grp{background:var(--ok);color:#fff}
+.bar .t{font-weight:600;font-size:15px;line-height:1.2}
+.bar .s{font-size:12px;color:var(--meta)}
+.feed{flex:1;overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+.msg{max-width:88%;display:grid;gap:4px}
+.msg.out{align-self:flex-end}
+.bub{background:var(--in);border-radius:14px 14px 14px 4px;padding:8px 11px;font-size:14.5px;line-height:1.42;white-space:pre-line;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.out .bub{background:var(--out);border-radius:14px 14px 4px 14px}
+.bub .tm{float:right;font-size:11px;color:var(--meta);margin:6px 0 -4px 10px}
+.bub b{font-weight:600}
+.food{border-radius:10px;height:112px;display:grid;place-items:center;font-size:52px;margin:-2px -5px 6px}
+.price{font-weight:600;font-variant-numeric:tabular-nums}
+.small{font-size:12.5px;color:var(--meta)}
+.kb{display:grid;gap:4px}
+.kb .row{display:flex;gap:4px}
+.kb button{flex:1;border:0;background:var(--kb);color:var(--kb-ink);border-radius:10px;padding:8px 6px;font-size:13.5px;font-weight:500;line-height:1.2;min-height:36px}
+.kb button:hover{background:var(--kb-hover)}
+.kb button:disabled{opacity:.45;cursor:default}
+.sys{align-self:center;background:rgba(0,0,0,.18);color:#fff;font-size:12px;border-radius:12px;padding:3px 10px}
+.reply-kb{padding:6px 8px;background:var(--phone-head);border-top:1px solid var(--line);display:grid;gap:6px}
+.reply-kb button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;font-size:14px;font-weight:500}
+.input{display:flex;gap:8px;padding:8px 10px;background:var(--phone-head);border-top:1px solid var(--line);align-items:center}
+.input input{flex:1;min-width:0;border:0;background:transparent;color:var(--phone-head-ink);font:inherit;font-size:15px;padding:8px 4px}
+.input input::placeholder{color:var(--meta)}
+.send{border:0;background:var(--accent);color:var(--accent-ink);width:38px;height:38px;border-radius:50%;font-size:17px;flex:none}
+.toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--toast);color:var(--paper);padding:9px 14px;border-radius:12px;font-size:13.5px;max-width:86%;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* order card in staff chat */
+.order .bub{border-left:3px solid var(--accent)}
+.st{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.st.ok{background:var(--ok-soft);color:var(--ok)}
+.st.off{background:var(--line);color:var(--muted)}
+.lines{font-variant-numeric:tabular-nums}
+
+/* sections */
+section.block{padding-block:48px;border-top:1px solid var(--line);display:grid;gap:24px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 40px}
+.grid2 p,.steps p{margin:6px 0 0;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:grid;gap:4px;align-content:start}
+.steps li::before{content:counter(s);font-family:var(--display);font-weight:700;font-size:15px;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);display:grid;place-items:center;margin-bottom:8px}
+.offer{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:start}
+.check{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.check li{padding-left:28px;position:relative}
+.check li::before{content:"";position:absolute;left:4px;top:8px;width:12px;height:7px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
+.pricecard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:14px}
+.big{font-family:var(--display);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.kv{display:grid;gap:10px;font-size:15px}
+.kv div{display:flex;justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding-top:10px}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{text-align:right;font-weight:500}
+.note{font-size:14px;color:var(--muted);margin:0}
+.later{display:grid;gap:8px}
+.later h3{font-size:16px}
+.later ul{margin:0;padding-left:20px;color:var(--muted)}
+.need{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px}
+.need li{border-top:1px solid var(--line);padding-top:12px}
+.need li span{display:block;color:var(--muted);font-size:15px}
+.contact{background:var(--ink);color:var(--paper);border-radius:22px;padding:32px;display:grid;gap:20px;margin-block:8px 48px}
+.contact h2{color:var(--paper)}
+.contact p{margin:0;opacity:.8;max-width:56ch}
+.cards{display:flex;gap:12px;flex-wrap:wrap}
+.cc{display:flex;align-items:center;gap:10px;background:rgba(127,127,127,.16);border-radius:14px;padding:12px 14px}
+.cc .l{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+.cc .v{font-weight:600;font-size:17px;user-select:all;font-variant-numeric:tabular-nums}
+.cc a{color:inherit;text-decoration:none}
+.cc button{border:0;border-radius:10px;padding:7px 10px;font-size:13px;background:var(--accent);color:var(--accent-ink);font-weight:600}
+footer{color:var(--muted);font-size:13px;padding-block:0 32px}
+
+@media (max-width:860px){
+  .tabs{display:flex}
+  .phones{grid-template-columns:minmax(0,400px)}
+  .phone-col[data-hide="1"]{display:none}
+  .phone-label{display:none}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .offer{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .grid2,.need{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr}
+  .phone{padding:6px;border-radius:26px}
+  .screen{height:580px;border-radius:21px}
+  .contact{padding:24px 20px}
+}
+@media (prefers-reduced-motion:reduce){.feed{scroll-behavior:auto}.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <div><b>Рашид</b> · сайты и Телеграм-боты для бизнеса</div>
+    <div>Telegram <b>@erkek_au</b></div>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow">Предложение для суши- и пицца-кафе</div>
+    <h1>Заказы из Телеграма сразу на кухню</h1>
+    <p class="lead">Свой бот для кафе. Гость выбирает роллы, пиццу и горячее, оформляет доставку или самовывоз, а персонал видит заказ в рабочем чате и одной кнопкой отмечает, что он готовится и уже едет.</p>
+  </header>
+
+  <section class="demo" aria-label="Демо бота">
+    <div class="demo-hint">
+      <p><b>Попробуйте сами.</b> На экране гостя соберите заказ и нажмите «Подтвердить». Он сразу появится в чате персонала: там нажимайте кнопки статусов, и гостю будут приходить сообщения.</p>
+      <button class="ghost" id="reset" type="button">Начать заново</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-g" aria-selected="true">Гость</button>
+      <button type="button" role="tab" id="tab-s" aria-selected="false">Персонал<span class="badge" id="badge" hidden>1</span></button>
+    </div>
+    <div class="phones">
+      <div class="phone-col" id="col-g">
+        <div class="phone-label"><span>Экран гостя</span></div>
+        <div class="phone"><div class="screen">
+          <div class="bar"><div class="ava bot">🍣</div><div><div class="t">Демо-кафе · Суши и пицца</div><div class="s">бот</div></div></div>
+          <div class="feed" id="feed-g" aria-live="polite"></div>
+          <div class="reply-kb" id="rkb" hidden></div>
+          <form class="input" id="form-g"><input id="inp-g" placeholder="Сообщение" autocomplete="off" aria-label="Сообщение боту"><button class="send" type="submit" aria-label="Отправить">➤</button></form>
+          <div class="toast" id="toast"></div>
+        </div></div>
+      </div>
+      <div class="phone-col" id="col-s" data-hide="1">
+        <div class="phone-label"><span>Чат персонала</span></div>
+        <div class="phone"><div class="screen">
+          <div class="bar"><div class="ava grp">📋</div><div><div class="t">Заказы · Демо-кафе</div><div class="s">3 участника: администратор, кухня, курьер</div></div></div>
+          <div class="feed" id="feed-s" aria-live="polite"></div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Что это даёт кафе</h2>
+    <div class="grid2">
+      <div><h3>Свой канал заказов</h3><p>Гости заказывают напрямую у вас. С заказов через бота агрегатор не берёт комиссию.</p></div>
+      <div><h3>Заказы не теряются</h3><p>Каждый заказ приходит карточкой с номером, составом, адресом, телефоном и суммой. Не нужно искать его в переписке или записывать со звонка.</p></div>
+      <div><h3>Меньше звонков «где мой заказ»</h3><p>Персонал нажимает кнопку, и гость сразу получает сообщение: принят, готовится, курьер выехал.</p></div>
+      <div><h3>Своя база гостей</h3><p>Все, кто заказывал, остаются в боте. Можно разослать им новость об акции или новом сете.</p></div>
+      <div><h3>Меню меняете сами</h3><p>Цены, блюда и фото хранятся в простом файле. Закончился лосось, и блюдо можно убрать за минуту без программиста.</p></div>
+      <div><h3>Работает в Телеграме</h3><p>Гостю не нужно ничего скачивать или регистрироваться. Достаточно открыть ссылку или отсканировать QR-код на пакете.</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Как проходит заказ</h2>
+    <ol class="steps">
+      <li><h3>Гость выбирает</h3><p>Разделы меню, фото, вес и цена. Добавляет блюда в корзину.</p></li>
+      <li><h3>Оформляет</h3><p>Доставка или самовывоз, телефон одной кнопкой, адрес, способ оплаты.</p></li>
+      <li><h3>Кафе принимает</h3><p>Заказ приходит в рабочий чат. Администратор нажимает «Принять».</p></li>
+      <li><h3>Гость в курсе</h3><p>Каждое нажатие кнопки статуса сразу уходит гостю сообщением.</p></li>
+    </ol>
+  </section>
+
+  <section class="block">
+    <h2>Что входит и сколько стоит</h2>
+    <div class="offer">
+      <div style="display:grid;gap:28px">
+        <ul class="check">
+          <li>Меню по разделам с фото, весом и ценами</li>
+          <li>Корзина: добавить, убрать, изменить количество</li>
+          <li>Оформление: доставка или самовывоз, телефон, адрес, оплата при получении</li>
+          <li>Рабочий чат персонала с кнопками статусов</li>
+          <li>Автоматические уведомления гостю</li>
+          <li>Рассылка акций всем гостям бота</li>
+          <li>Статистика: сколько гостей и заказов</li>
+          <li>Настройка под ваше меню, запуск и короткая инструкция для персонала</li>
+        </ul>
+        <div class="later">
+          <h3>Можно добавить потом</h3>
+          <ul>
+            <li>Промокоды и бонусы для постоянных гостей</li>
+            <li>Меню в виде красивой витрины внутри Телеграма</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pricecard">
+        <div class="small" style="text-transform:uppercase;letter-spacing:.08em">Бот под ключ</div>
+        <div class="big">от 20 000 ₽</div>
+        <div class="kv">
+          <div><span>Срок</span><span>5–7 дней после получения меню</span></div>
+          <div><span>Оплата</span><span>50% в начале, 50% после запуска</span></div>
+          <div><span>Сервер для бота</span><span>несколько сотен ₽ в месяц, оплачивается отдельно</span></div>
+        </div>
+        <p class="note">Точную цену назову, когда увижу меню и условия доставки.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Что понадобится от вас</h2>
+    <ul class="need">
+      <li><b>Меню</b><span>Названия, вес или количество штук, цены. Фото блюд, если есть.</span></li>
+      <li><b>Доставка</b><span>Районы, стоимость, минимальная сумма заказа, примерное время.</span></li>
+      <li><b>Часы работы</b><span>Когда бот принимает заказы и что отвечать ночью.</span></li>
+      <li><b>Кто принимает заказы</b><span>Телеграм администратора и сотрудников для рабочего чата.</span></li>
+    </ul>
+  </section>
+
+  <div class="contact">
+    <h2>Покажу бота на вашем меню</h2>
+    <p>Напишите или позвоните. Созвонимся на 15 минут, обсудим, как у вас сейчас принимаются заказы, и я скажу точную цену и срок.</p>
+    <div class="cards">
+      <div class="cc"><div><div class="l">Telegram</div><div class="v"><a href="https://t.me/erkek_au" target="_blank" rel="noopener">@erkek_au</a></div></div><button type="button" data-copy="@erkek_au">Копировать</button></div>
+      <div class="cc"><div><div class="l">Телефон и WhatsApp</div><div class="v">+7 905 498-05-46</div></div><button type="button" data-copy="+7 905 498-05-46">Копировать</button></div>
+    </div>
+  </div>
+
+  <footer>Меню, цены и условия в демо выдуманы для примера. В вашем боте будут ваши.</footer>
+</div>
+
+<script>
+(function(){
+const MENU = {
+  rolls:{name:"Роллы", items:[
+    {id:"phila",n:"Филадельфия",d:"лосось, сливочный сыр, огурец",w:"8 шт · 250 г",p:590,e:"🍣",c:"#F6C7B2"},
+    {id:"cali",n:"Калифорния с крабом",d:"снежный краб, авокадо, икра масаго",w:"8 шт · 230 г",p:450,e:"🍣",c:"#F7D9A8"},
+    {id:"bake",n:"Запечённый с лососем",d:"лосось, сыр, соус спайси",w:"8 шт · 260 г",p:520,e:"🔥",c:"#F2B58E"}]},
+  sets:{name:"Сеты", items:[
+    {id:"big",n:"Сет «Большой»",d:"4 вида роллов на компанию",w:"32 шт · 1100 г",p:1790,e:"🍱",c:"#D8E6C4"},
+    {id:"hot",n:"Сет «Горячий»",d:"3 вида запечённых роллов",w:"24 шт · 780 г",p:1390,e:"🍱",c:"#F3C9A5"}]},
+  pizza:{name:"Пицца", items:[
+    {id:"pep",n:"Пепперони",d:"пепперони, моцарелла, томатный соус",w:"30 см",p:620,e:"🍕",c:"#F5C09A"},
+    {id:"marg",n:"Маргарита",d:"томаты, моцарелла, базилик",w:"30 см",p:490,e:"🍕",c:"#F6DDA2"},
+    {id:"4ch",n:"Четыре сыра",d:"моцарелла, дорблю, пармезан, чеддер",w:"30 см",p:650,e:"🧀",c:"#F7E7B0"}]},
+  hot:{name:"Горячее", items:[
+    {id:"wok",n:"Вок с курицей",d:"удон, курица, овощи, соус терияки",w:"350 г",p:390,e:"🍜",c:"#EBD3AE"},
+    {id:"tom",n:"Том ям",d:"креветки, кокосовое молоко, рис",w:"400 мл",p:490,e:"🍲",c:"#F4BFA0"}]},
+  drinks:{name:"Напитки", items:[
+    {id:"mors",n:"Морс клюквенный",d:"домашний",w:"0,5 л",p:150,e:"🥤",c:"#EFB7BE"},
+    {id:"cola",n:"Кола",d:"",w:"0,5 л",p:120,e:"🥤",c:"#D9D2CB"}]}
+};
+const ITEM={}; Object.values(MENU).forEach(c=>c.items.forEach(i=>ITEM[i.id]=i));
+const FREE_FROM=1000, DELIVERY=150;
+const rub=n=>n.toLocaleString("ru-RU")+" ₽";
+const now=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const fG=document.getElementById("feed-g"), fS=document.getElementById("feed-s");
+const rkb=document.getElementById("rkb"), inp=document.getElementById("inp-g");
+let S;
+
+function reset(){
+  S={cart:{},step:null,mode:null,addr:"",pay:"",num:1043,cartMsg:null,orders:{}};
+  fG.innerHTML="";fS.innerHTML="";rkb.hidden=true;badge.hidden=true;
+  sys(fG,"Сегодня");
+  user("/start");
+  bot(fG,"Здравствуйте! Это бот <b>Демо-кафе</b>: суши, пицца и горячее с доставкой.\n\nДоставка бесплатно от "+rub(FREE_FROM)+", работаем с 10:00 до 23:00.",mainKb());
+  sys(fS,"Сегодня");
+  staffOrder({num:1042,mode:"delivery",addr:"ул. Мира, 310, кв. 12",name:"Игорь",phone:"+7 9•• •••-••-17",pay:"картой курьеру",lines:[["big",1],["mors",2]],status:"cooking",demo:true});
+}
+
+function sys(feed,t){const d=document.createElement("div");d.className="sys";d.textContent=t;feed.appendChild(d)}
+function scroll(feed){requestAnimationFrame(()=>{feed.scrollTop=feed.scrollHeight})}
+function user(text){
+  const m=document.createElement("div");m.className="msg out";
+  m.innerHTML='<div class="bub">'+esc(text)+'<span class="tm">'+now()+'</span></div>';
+  fG.appendChild(m);scroll(fG);
+}
+function bot(feed,html,kb,cls){
+  const m=document.createElement("div");m.className="msg"+(cls?" "+cls:"");
+  fill(m,html,kb);feed.appendChild(m);scroll(feed);return m;
+}
+function fill(m,html,kb){
+  m.innerHTML='<div class="bub">'+html+'<span class="tm">'+now()+'</span></div>'+(kb&&kb.length?kbHtml(kb):"");
+}
+function kbHtml(rows){
+  return '<div class="kb">'+rows.map(r=>'<div class="row">'+r.map(b=>'<button type="button" data-a="'+esc(b[1])+'">'+esc(b[0])+'</button>').join("")+'</div>').join("")+'</div>';
+}
+function count(){return Object.values(S.cart).reduce((a,b)=>a+b,0)}
+function sum(){return Object.entries(S.cart).reduce((a,[id,q])=>a+ITEM[id].p*q,0)}
+function mainKb(){return [[["📋 Меню","menu"],["🛒 Корзина"+(count()?" ("+count()+")":""),"cart"]],[["🚚 Доставка и оплата","info"],["📞 Контакты","contacts"]]]}
+function catKb(){const k=Object.entries(MENU).map(([id,c])=>[c.name,"cat:"+id]);return [k.slice(0,2),k.slice(2,4),[k[4],["🛒 Корзина"+(count()?" ("+count()+")":""),"cart"]]]}
+
+let tt;function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>e.classList.remove("show"),1600)}
+
+function cartHtml(){
+  if(!count())return "Корзина пуста. Загляните в меню 👇";
+  const s=sum(), dl=s>=FREE_FROM?0:DELIVERY;
+  let h="<b>Ваша корзина</b>\n";
+  for(const [id,q] of Object.entries(S.cart)){const i=ITEM[id];h+="\n"+esc(i.n)+" × "+q+" — <span class='price'>"+rub(i.p*q)+"</span>"}
+  h+="\n\nБлюда: <span class='price'>"+rub(s)+"</span>";
+  h+="\nДоставка: "+(dl?rub(dl)+" <span class='small'>(бесплатно от "+rub(FREE_FROM)+")</span>":"бесплатно");
+  return h;
+}
+function cartKb(){
+  if(!count())return [[["📋 Меню","menu"]]];
+  const rows=Object.entries(S.cart).map(([id,q])=>[["−","dec:"+id],[ITEM[id].n.split(" ")[0]+" × "+q,"noop"],["+","inc:"+id]]);
+  rows.push([["✅ Оформить заказ","checkout"]]);
+  rows.push([["📋 Меню","menu"],["🗑 Очистить","clear"]]);
+  return rows;
+}
+function showCart(){S.cartMsg=bot(fG,cartHtml(),cartKb())}
+function refreshCart(){if(S.cartMsg&&S.cartMsg.isConnected){fill(S.cartMsg,cartHtml(),cartKb())}}
+
+function summary(){
+  let h="<b>Проверьте заказ</b>\n";
+  for(const [id,q] of Object.entries(S.cart)){h+="\n"+esc(ITEM[id].n)+" × "+q}
+  const s=sum(), dl=S.mode==="delivery"&&s<FREE_FROM?DELIVERY:0;
+  h+="\n\n"+(S.mode==="delivery"?"Доставка: "+esc(S.addr):"Самовывоз: пр. Примерный, 1");
+  h+="\nОплата: "+S.pay;
+  h+="\n<b>Итого: <span class='price'>"+rub(s+dl)+"</span></b>";
+  return h;
+}
+
+function act(a){
+  const [cmd,arg]=a.split(":");
+  switch(cmd){
+    case "noop":return;
+    case "menu":bot(fG,"Выберите раздел:",catKb());break;
+    case "cat":{
+      const c=MENU[arg];
+      c.items.forEach(i=>bot(fG,'<div class="food" style="background:'+i.c+'">'+i.e+'</div><b>'+esc(i.n)+'</b>\n'+(i.d?esc(i.d)+"\n":"")+'<span class="small">'+i.w+'</span>\n<span class="price">'+rub(i.p)+'</span>',[[["+ В корзину","add:"+i.id]]]));
+      bot(fG,"Раздел «"+c.name+"». Что дальше?",[[["← Разделы","menu"],["🛒 Корзина","cart"]]]);
+      break;}
+    case "add":S.cart[arg]=(S.cart[arg]||0)+1;toast("Добавлено: "+ITEM[arg].n+". В корзине "+count()+" шт на "+rub(sum()));refreshCart();break;
+    case "inc":S.cart[arg]++;refreshCart();break;
+    case "dec":S.cart[arg]--;if(S.cart[arg]<=0)delete S.cart[arg];refreshCart();break;
+    case "clear":S.cart={};refreshCart();toast("Корзина очищена");break;
+    case "cart":showCart();break;
+    case "info":bot(fG,"<b>Доставка</b>\nПо городу 40–60 минут. Бесплатно от "+rub(FREE_FROM)+", иначе "+rub(DELIVERY)+".\n\n<b>Самовывоз</b>\nпр. Примерный, 1 — скидка 10%.\n\n<b>Оплата</b>\nНаличными или картой курьеру, переводом.",mainKb());break;
+    case "contacts":bot(fG,"📍 пр. Примерный, 1\n🕙 10:00–23:00 без выходных\n📞 +7 (000) 000-00-00",mainKb());break;
+    case "checkout":
+      if(!count()){toast("Корзина пуста");return}
+      S.step="mode";bot(fG,"Как получить заказ?",[[["🚚 Доставка","mode:delivery"],["🏃 Самовывоз","mode:pickup"]]]);break;
+    case "mode":
+      if(S.step!=="mode")return;
+      S.mode=arg;user(arg==="delivery"?"🚚 Доставка":"🏃 Самовывоз");
+      S.step="phone";
+      bot(fG,"Нажмите кнопку внизу, чтобы отправить номер телефона.\n<span class='small'>Отправляя номер, вы соглашаетесь на обработку персональных данных для доставки заказа.</span>");
+      rkb.innerHTML='<button type="button" data-a="phone">📱 Поделиться контактом</button>';rkb.hidden=false;break;
+    case "phone":
+      if(S.step!=="phone")return;
+      rkb.hidden=true;user("👤 Анна\n+7 900 123-45-67");
+      if(S.mode==="delivery"){S.step="addr";bot(fG,"Напишите адрес доставки: улица, дом, подъезд, квартира.",[[["Пример: ул. Ленина, 25, кв. 8","addr:ул. Ленина, 25, кв. 8"]]]);inp.placeholder="Адрес доставки";inp.focus({preventScroll:true})}
+      else askPay();
+      break;
+    case "addr":if(S.step==="addr")setAddr(a.slice(5));break;
+    case "pay":
+      if(S.step!=="pay")return;
+      S.pay={cash:"наличными курьеру",card:"картой курьеру",sbp:"переводом"}[arg];
+      if(S.mode==="pickup")S.pay=S.pay.replace(" курьеру"," на месте");
+      user("💳 "+S.pay[0].toUpperCase()+S.pay.slice(1));
+      S.step="confirm";bot(fG,summary(),[[["✅ Подтвердить","confirm"]],[["✏️ Изменить корзину","cart"]]]);break;
+    case "confirm":{
+      if(S.step!=="confirm")return;
+      const o={num:S.num++,mode:S.mode,addr:S.addr,name:"Анна",phone:"+7 900 123-45-67",pay:S.pay,lines:Object.entries(S.cart),status:"new"};
+      S.step=null;S.cart={};S.addr="";inp.placeholder="Сообщение";
+      bot(fG,"🎉 <b>Заказ №"+o.num+" отправлен!</b>\nМы напишем, как только кафе его примет.",mainKb());
+      setTimeout(()=>{staffOrder(o);if(curTab==="g")badge.hidden=false;},450);
+      break;}
+    case "st":{const [num,st]=arg.split("|");setStatus(+num,st);break;}
+  }
+}
+function askPay(){
+  S.step="pay";
+  const k=S.mode==="delivery"?[[["Наличными","pay:cash"],["Картой курьеру","pay:card"]],[["Переводом","pay:sbp"]]]:[[["Наличными","pay:cash"],["Картой на месте","pay:card"]]];
+  bot(fG,"Как удобнее оплатить?",k);
+}
+function setAddr(t){S.addr=t;user(t);inp.placeholder="Сообщение";askPay()}
+
+/* staff side */
+const FLOW={
+  delivery:[["new","🆕 Новый"],["accepted","Принят"],["cooking","Готовится"],["sent","У курьера"],["done","Выполнен"]],
+  pickup:[["new","🆕 Новый"],["accepted","Принят"],["cooking","Готовится"],["ready","Готов к выдаче"],["done","Выдан"]]
+};
+const NEXT_BTN={accepted:"✅ Принять",cooking:"👨‍🍳 Готовится",sent:"🛵 Передан курьеру",ready:"📦 Готов к выдаче",done:"✔️ Выполнен"};
+const TO_GUEST={
+  accepted:o=>"✅ Заказ №"+o.num+" принят. "+(o.mode==="delivery"?"Привезём примерно за 50 минут.":"Будет готов примерно через 30 минут."),
+  cooking:o=>"👨‍🍳 Начали готовить заказ №"+o.num+".",
+  sent:o=>"🛵 Курьер выехал с заказом №"+o.num+". Скоро будет у вас!",
+  ready:o=>"📦 Заказ №"+o.num+" готов, ждём вас: пр. Примерный, 1.",
+  done:o=>"Спасибо за заказ! Приятного аппетита 🙌\nБудем рады видеть вас снова.",
+  cancel:o=>"😔 Заказ №"+o.num+" отменён. Мы перезвоним, чтобы всё уточнить."
+};
+function orderHtml(o){
+  const flow=FLOW[o.mode], st=flow.find(f=>f[0]===o.status);
+  const label=o.status==="cancel"?"Отменён":st[1];
+  const cls=o.status==="new"?"st":o.status==="cancel"?"st off":"st ok";
+  let s=0,lines="";
+  o.lines.forEach(([id,q])=>{const i=ITEM[id];s+=i.p*q;lines+="\n• "+esc(i.n)+" × "+q+" — "+rub(i.p*q)});
+  const dl=o.mode==="delivery"&&s<FREE_FROM?DELIVERY:0;
+  if(dl)lines+="\n• Доставка — "+rub(dl);
+  return '<b>Заказ №'+o.num+'</b> · '+(o.mode==="delivery"?"доставка":"самовывоз")+'  <span class="'+cls+'">'+label+'</span>'+(o.demo?'\n<span class="small">пример заказа</span>':'')
+    +'\n\n👤 '+esc(o.name)+', '+esc(o.phone)+(o.mode==="delivery"?'\n📍 '+esc(o.addr):'')
+    +'\n<span class="lines">'+lines+'</span>\n\n<b>Итого: '+rub(s+dl)+'</b> · '+esc(o.pay);
+}
+function orderKb(o){
+  if(o.status==="done"||o.status==="cancel")return [];
+  const flow=FLOW[o.mode], idx=flow.findIndex(f=>f[0]===o.status), nx=flow[idx+1][0];
+  const row=[[NEXT_BTN[nx],"st:"+o.num+"|"+nx]];
+  if(o.status==="new")row.push(["❌ Отменить","st:"+o.num+"|cancel"]);
+  return [row];
+}
+function staffOrder(o){
+  S.orders[o.num]=o;
+  o.el=bot(fS,orderHtml(o),orderKb(o),"order");
+}
+function setStatus(num,st){
+  const o=S.orders[num];if(!o||o.status==="done"||o.status==="cancel")return;
+  o.status=st;fill(o.el,orderHtml(o),orderKb(o));
+  const who={accepted:"Администратор",cooking:"Кухня",sent:"Курьер",ready:"Кухня",done:"Администратор",cancel:"Администратор"}[st];
+  sys(fS,who+" · заказ №"+num+" → "+(st==="cancel"?"отменён":FLOW[o.mode].find(f=>f[0]===st)[1].toLowerCase()));scroll(fS);
+  if(!o.demo){bot(fG,TO_GUEST[st](o),st==="done"||st==="cancel"?mainKb():null);if(curTab==="s")toastTab()}
+}
+
+/* events */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(b){act(b.dataset.a);return}
+  const c=e.target.closest("[data-copy]");
+  if(c){const t=c.dataset.copy,done=()=>{const o=c.textContent;c.textContent="Скопировано";setTimeout(()=>c.textContent=o,1400)};
+    try{navigator.clipboard.writeText(t).then(done,()=>sel(c))}catch(_){sel(c)}}
+});
+function sel(c){const v=c.parentElement.querySelector(".v");const r=document.createRange();r.selectNodeContents(v);const s=getSelection();s.removeAllRanges();s.addRange(r)}
+document.getElementById("form-g").addEventListener("submit",e=>{
+  e.preventDefault();const t=inp.value.trim();if(!t)return;inp.value="";
+  if(S.step==="addr"){setAddr(t);return}
+  user(t);
+  if(t==="/start"){bot(fG,"С возвращением! Что закажем?",mainKb());return}
+  bot(fG,"Я умею принимать заказы. Выберите, что нужно 👇",mainKb());
+});
+document.getElementById("reset").addEventListener("click",reset);
+
+/* mobile tabs */
+const badge=document.getElementById("badge");let curTab="g";
+const tg=document.getElementById("tab-g"),ts=document.getElementById("tab-s"),cg=document.getElementById("col-g"),cs=document.getElementById("col-s");
+function tab(t){curTab=t;tg.setAttribute("aria-selected",t==="g");ts.setAttribute("aria-selected",t==="s");cg.dataset.hide=t==="g"?"0":"1";cs.dataset.hide=t==="s"?"0":"1";if(t==="s")badge.hidden=true;scroll(fG);scroll(fS)}
+function toastTab(){tg.textContent="Гость •"}
+tg.addEventListener("click",()=>{tab("g");tg.textContent="Гость"});ts.addEventListener("click",()=>tab("s"));
+tab("g");
+reset();
+})();
+</script>
+</body>
+</html>
